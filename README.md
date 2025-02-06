@@ -56,7 +56,7 @@ python gnome-ocr-screenshot.py
 Move the script to a directory in your PATH and create a desktop shortcut for easy access.
 
 ```bash
-git clone
+git clone https://github.com/funinkina/Gnome-OCR-Screenshot
 sudo cp gnome-screenshot-ocr.py ~/.local/bin/gnome-screenshot-ocr
 chmod +x ~/.local/bin/gnome-screenshot-ocr
 ```
@@ -90,4 +90,4 @@ gnome-screenshot-ocr --lang eng+deu --save-location ~/Documents
 
 ## License
 
-[Insert your chosen license here]
+MIT License
