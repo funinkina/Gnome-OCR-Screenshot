@@ -58,7 +58,7 @@ class TextDialog(Gtk.Dialog):
         button_box.set_margin_end(12)
         button_box.set_halign(Gtk.Align.END)
 
-        save_button = Gtk.Button(label="Save")
+        save_button = Gtk.Button(label="Save to File")
         copy_button = Gtk.Button(label="Copy to Clipboard")
 
         save_button.connect("clicked", self.on_save_clicked)
@@ -81,12 +81,20 @@ class TextDialog(Gtk.Dialog):
         dialog.set_initial_name(
             f"clipboard_{datetime.now().strftime('%H-%M_%y-%m')}.txt"
         )
-        documents_path = GLib.get_user_special_dir(
-            GLib.UserDirectory.DIRECTORY_DOCUMENTS
-        )
-        if documents_path:
-            initial_folder = Gio.File.new_for_path(documents_path)
+
+        # Use custom save location if specified
+        if self.app.save_location:
+            initial_folder = Gio.File.new_for_path(self.app.save_location)
             dialog.set_initial_folder(initial_folder)
+        else:
+            # Default to Documents folder
+            documents_path = GLib.get_user_special_dir(
+                GLib.UserDirectory.DIRECTORY_DOCUMENTS
+            )
+            if documents_path:
+                initial_folder = Gio.File.new_for_path(documents_path)
+                dialog.set_initial_folder(initial_folder)
+
         dialog.set_modal(True)
         dialog.set_accept_label("Save")
 
@@ -136,12 +144,30 @@ class TextDialog(Gtk.Dialog):
 
 
 class GnomeOCRApp(Gtk.Application):
-    def __init__(self, enable_saving=False, no_close_on_action=False, lang=None):
+    def __init__(
+        self,
+        enable_saving=False,
+        no_close_on_action=False,
+        lang=None,
+        save_location=None,
+    ):
         super().__init__()
         self.portal = Xdp.Portal()
         self.enable_saving = enable_saving
         self.no_close_on_action = no_close_on_action
         self.lang = lang
+
+        # Validate and store save location
+        if save_location:
+            if os.path.isdir(save_location):
+                self.save_location = save_location
+            else:
+                print(
+                    f"Warning: Save location '{save_location}' is not a valid directory. Using default."
+                )
+                self.save_location = None
+        else:
+            self.save_location = None
 
     def do_activate(self):
         self.win = Gtk.ApplicationWindow(application=self)
@@ -164,11 +190,17 @@ class GnomeOCRApp(Gtk.Application):
     def on_screenshot_taken(self, source_object, res, user_data):
         if res.had_error():
             print("Error: Can't take a screenshot.")
+            self.quit()
             return
 
-        filename = self.portal.take_screenshot_finish(res)
-        filename = filename[7:]
-        filename = GLib.Uri.unescape_string(filename)
+        try:
+            filename = self.portal.take_screenshot_finish(res)
+            filename = filename[7:]
+            filename = GLib.Uri.unescape_string(filename)
+        except Exception as e:
+            print(f"Error: Failed to process screenshot: {str(e)}")
+            self.quit()
+            return
 
         try:
             available_langs = pytesseract.get_languages()
@@ -186,7 +218,14 @@ class GnomeOCRApp(Gtk.Application):
             dialog.present()
 
         except Exception as e:
-            print("Error extracting text:", e)
+            print(f"Error extracting text: {str(e)}")
+            if not self.enable_saving:
+                try:
+                    os.unlink(filename)
+                except Exception as e:
+                    print(f"Error deleting screenshot file: {str(e)}")
+            self.quit()
+            return
 
         if not self.enable_saving:
             try:
@@ -223,10 +262,17 @@ parser.add_argument(
     help="Language(s) to use for OCR. Default is all available languages. Make sure to install the required language data.\n Example usage: --lang eng+deu",
 )
 
+parser.add_argument(
+    "--save-location",
+    action="store",
+    help="Default directory for saving text files. Must be an existing directory.",
+)
+
 args = parser.parse_args()
 app = GnomeOCRApp(
     enable_saving=args.enablesaving,
     no_close_on_action=args.nocloseonaction,
     lang=args.lang,
+    save_location=args.save_location,
 )
 app.run(None)
