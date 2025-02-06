@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import gi
 import os
 from PIL import Image
@@ -135,12 +137,7 @@ class TextDialog(Gtk.Dialog):
         provider = Gdk.ContentProvider.new_for_value(GObject.Value(str, text))
         clipboard.set_content(provider)
 
-        toast = Adw.Toast.new("Text copied to clipboard")
-        toast.set_timeout(2)
-        self.toast_overlay.add_toast(toast)
-
-        if not self.app.no_close_on_action:
-            GLib.timeout_add(2100, lambda: self.app.quit())
+        GLib.timeout_add(50, lambda: self.app.quit())
 
 
 class GnomeOCRApp(Gtk.Application):
@@ -212,7 +209,8 @@ class GnomeOCRApp(Gtk.Application):
                 print(f"Available languages: {available_langs[:-1]}")
 
             text = pytesseract.image_to_string(Image.open(filename), lang=ocr_lang)
-            print("Extracted text:", text)
+            print("Extracted text:\n", text)
+
             dialog = TextDialog(self, text)
             dialog.connect("close-request", self.on_dialog_close)
             dialog.present()
