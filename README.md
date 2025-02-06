@@ -2,6 +2,8 @@
 
 A simple OCR (Optical Character Recognition) tool for the GNOME desktop environment that allows you to extract text automatically from screenshots.
 
+![Screenshot](screenshot.png)
+
 ## Features
 
 - Interactive screenshot selection
