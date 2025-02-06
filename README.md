@@ -5,31 +5,31 @@ A simple OCR (Optical Character Recognition) tool for the GNOME desktop environm
 ## Features
 
 - Interactive screenshot selection
-- Text extraction using Tesseract OCR
 - Copy extracted text to clipboard
 - Save extracted text to file
 - Multi-language support
 - GNOME desktop integration
+- Customizable options
+- Lightweight and minimal dependencies
 
 ## Requirements
 
-- Python 3.x
-- GTK 4
-- Tesseract OCR
-- Python packages:
-  - PyGObject
-  - Pillow
-  - pytesseract
+- Python 3.x (Preinstalled on most Linux distributions)
+- GTK 4 (Preinstalled on GNOME-based distributions)
+- Tesseract OCR (See below for installation instructions)
 
 ## Installation
 
 1. Install system dependencies:
 ```bash
 # Ubuntu/Debian
-sudo apt install python3-gi python3-gi-cairo gir1.2-gtk-4.0 tesseract-ocr python3-pip
+sudo apt install tesseract-ocr
 
 # Fedora
-sudo dnf install python3-gobject gtk4 tesseract python3-pip
+sudo dnf install tesseract
+
+# Arch Linux
+sudo pacman -S tesseract
 ```
 
 2. Install Python dependencies:
@@ -39,28 +39,45 @@ pip install pillow pytesseract
 
 3. For additional language support, install the corresponding Tesseract language packages:
 ```bash
-# Example for German language support
-sudo apt install tesseract-ocr-deu  # Ubuntu/Debian
-sudo dnf install tesseract-langpack-deu  # Fedora
+# Example for hindi language support
+sudo apt install tesseract-ocr-hin  # Ubuntu/Debian
+sudo dnf install tesseract-langpack-hin  # Fedora
+sudo pacman -S tesseract-data-hin  # Arch Linux
 ```
 
 ## Usage
 
 Basic usage:
 ```bash
-python main.py
+python gnome-ocr-screenshot.py
 ```
+
+## Recommended Usage
+Move the script to a directory in your PATH and create a desktop shortcut for easy access.
+
+```bash
+git clone
+sudo cp gnome-screenshot-ocr.py ~/.local/bin/gnome-screenshot-ocr
+chmod +x ~/.local/bin/gnome-screenshot-ocr
+```
+
+Then make keyboard shortcut in gnome control center to run the script.
+1. Open GNOME settings
+2. Go to Keyboard Shortcuts
+3. Add a new shortcut with the command `gnome-screenshot-ocr` with the appropriate arguments (see below)
+4. Assign a key combination to the shortcut, for example: `Meta+PrintScreen`. 
 
 ### Command-line Options
 
-- `--enablesaving`: Keep the screenshot file after text extraction
-- `--nocloseonaction`: Keep the application running after saving text or copying to clipboard
-- `--lang`: Specify OCR language(s) (e.g., `--lang eng+deu` for English and German)
-- `--save-location`: Set default directory for saving text files
+- `--help`: Show help message and exit.
+- `--enablesaving`: Keep the screenshot file after text extraction.
+- `--nocloseonaction`: Keep the application running after saving text or copying to clipboard.
+- `--lang`: Specify OCR language(s) (e.g., `--lang eng+deu` for English and German). Default is all the available languages of Tesseract data installed on your system.
+- `--save-location`: Set default directory for saving text files (e.g., `--save-location ~/Documents`). Default is the user's documents directory.
 
 Example with options:
 ```bash
-python main.py --lang eng+deu --save-location ~/Documents
+gnome-screenshot-ocr --lang eng+deu --save-location ~/Documents
 ```
 
 ## How It Works
