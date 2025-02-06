@@ -50,7 +50,7 @@ python gnome-ocr-screenshot.py
 ```
 
 ## Recommended Usage
-Move the script to a directory in your PATH and create a desktop shortcut for easy access.
+Move the script to a directory in your PATH and create keyboard shortcut for quick access.
 
 ```bash
 git clone https://github.com/funinkina/Gnome-OCR-Screenshot
@@ -58,7 +58,7 @@ sudo cp gnome-screenshot-ocr.py ~/.local/bin/gnome-screenshot-ocr
 chmod +x ~/.local/bin/gnome-screenshot-ocr
 ```
 
-Then make keyboard shortcut in gnome control center to run the script.
+### Then make keyboard shortcut in gnome control center to run the script.
 1. Open GNOME settings
 2. Go to Keyboard Shortcuts
 3. Add a new shortcut with the command `gnome-screenshot-ocr` with the appropriate arguments (see below)
