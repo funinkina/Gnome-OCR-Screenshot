@@ -32,12 +32,7 @@ sudo dnf install tesseract
 sudo pacman -S tesseract
 ```
 
-2. Install Python dependencies:
-```bash
-pip install pillow pytesseract
-```
-
-3. For additional language support, install the corresponding Tesseract language packages:
+2. For additional language support, install the corresponding Tesseract language packages:
 ```bash
 # Example for hindi language support
 sudo apt install tesseract-ocr-hin  # Ubuntu/Debian
