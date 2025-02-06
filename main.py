@@ -2,6 +2,7 @@ import gi
 import os
 from PIL import Image
 import pytesseract
+from datetime import datetime
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Xdp", "1.0")
@@ -22,7 +23,7 @@ class TextDialog(Gtk.Dialog):
         super().__init__(title="Extracted Text", application=app, modal=True)
         self.app = app
 
-        self.set_default_size(400, 300)
+        self.set_default_size(500, 700)
         self.toast_overlay = Adw.ToastOverlay()
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.set_child(box)
@@ -76,7 +77,9 @@ class TextDialog(Gtk.Dialog):
     def on_save_clicked(self, button):
         dialog = Gtk.FileDialog()
         dialog.set_title("Save Extracted Text")
-        dialog.set_initial_name("cliboard.txt")
+        dialog.set_initial_name(
+            f"clipboard_{datetime.now().strftime('%H-%M_%y-%m')}.txt"
+        )
         dialog.set_modal(True)
         dialog.set_accept_label("Save")
 
@@ -156,7 +159,11 @@ class MyApp(Gtk.Application):
         filename = GLib.Uri.unescape_string(filename)
 
         try:
-            text = pytesseract.image_to_string(Image.open(filename))
+            langs = pytesseract.get_languages()
+            print("Available languages:", langs[:-1])
+            text = pytesseract.image_to_string(
+                Image.open(filename), lang="+".join(langs[:-1])
+            )
             print("Extracted text:", text)
             dialog = TextDialog(self, text)
             dialog.connect("close-request", self.on_dialog_close)
