@@ -24,7 +24,7 @@ class TextDialog(Gtk.Dialog):
         super().__init__(title="Extracted Text", application=app, modal=True)
         self.app = app
 
-        self.set_default_size(500, 700)
+        self.set_default_size(500, 400)
         self.toast_overlay = Adw.ToastOverlay()
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.set_child(box)
@@ -81,6 +81,12 @@ class TextDialog(Gtk.Dialog):
         dialog.set_initial_name(
             f"clipboard_{datetime.now().strftime('%H-%M_%y-%m')}.txt"
         )
+        documents_path = GLib.get_user_special_dir(
+            GLib.UserDirectory.DIRECTORY_DOCUMENTS
+        )
+        if documents_path:
+            initial_folder = Gio.File.new_for_path(documents_path)
+            dialog.set_initial_folder(initial_folder)
         dialog.set_modal(True)
         dialog.set_accept_label("Save")
 
@@ -130,11 +136,12 @@ class TextDialog(Gtk.Dialog):
 
 
 class GnomeOCRApp(Gtk.Application):
-    def __init__(self, enable_saving=False, no_close_on_action=False):
+    def __init__(self, enable_saving=False, no_close_on_action=False, lang=None):
         super().__init__()
         self.portal = Xdp.Portal()
         self.enable_saving = enable_saving
         self.no_close_on_action = no_close_on_action
+        self.lang = lang
 
     def do_activate(self):
         self.win = Gtk.ApplicationWindow(application=self)
@@ -164,11 +171,15 @@ class GnomeOCRApp(Gtk.Application):
         filename = GLib.Uri.unescape_string(filename)
 
         try:
-            langs = pytesseract.get_languages()
-            print("Available languages:", langs[:-1])
-            text = pytesseract.image_to_string(
-                Image.open(filename), lang="+".join(langs[:-1])
-            )
+            available_langs = pytesseract.get_languages()
+            if self.lang:
+                ocr_lang = self.lang
+                print(f"Using language(s): {ocr_lang}")
+            else:
+                ocr_lang = "+".join(available_langs[:-1])
+                print(f"Available languages: {available_langs[:-1]}")
+
+            text = pytesseract.image_to_string(Image.open(filename), lang=ocr_lang)
             print("Extracted text:", text)
             dialog = TextDialog(self, text)
             dialog.connect("close-request", self.on_dialog_close)
@@ -206,8 +217,16 @@ parser.add_argument(
     help="Do not quit the app after saving text or copying to clipboard.",
 )
 
+parser.add_argument(
+    "--lang",
+    action="store",
+    help="Language(s) to use for OCR. Default is all available languages. Make sure to install the required language data.\n Example usage: --lang eng+deu",
+)
+
 args = parser.parse_args()
 app = GnomeOCRApp(
-    enable_saving=args.enablesaving, no_close_on_action=args.nocloseonaction
+    enable_saving=args.enablesaving,
+    no_close_on_action=args.nocloseonaction,
+    lang=args.lang,
 )
 app.run(None)
