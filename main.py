@@ -3,6 +3,7 @@ import os
 from PIL import Image
 import pytesseract
 from datetime import datetime
+import argparse
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Xdp", "1.0")
@@ -109,7 +110,8 @@ class TextDialog(Gtk.Dialog):
                     )
                     error_dialog.present()
                 else:
-                    self.app.quit()
+                    if not self.app.no_close_on_action:
+                        self.app.quit()
         except GLib.Error as e:
             print(f"Error in file dialog: {e.message}")
 
@@ -123,13 +125,16 @@ class TextDialog(Gtk.Dialog):
         toast.set_timeout(2)
         self.toast_overlay.add_toast(toast)
 
-        GLib.timeout_add(2100, lambda: self.app.quit())
+        if not self.app.no_close_on_action:
+            GLib.timeout_add(2100, lambda: self.app.quit())
 
 
-class MyApp(Gtk.Application):
-    def __init__(self):
+class GnomeOCRApp(Gtk.Application):
+    def __init__(self, enable_saving=False, no_close_on_action=False):
         super().__init__()
         self.portal = Xdp.Portal()
+        self.enable_saving = enable_saving
+        self.no_close_on_action = no_close_on_action
 
     def do_activate(self):
         self.win = Gtk.ApplicationWindow(application=self)
@@ -172,10 +177,13 @@ class MyApp(Gtk.Application):
         except Exception as e:
             print("Error extracting text:", e)
 
-        try:
-            os.unlink(filename)
-        except Exception as e:
-            print("Error deleting screenshot file:", e)
+        if not self.enable_saving:
+            try:
+                os.unlink(filename)
+            except Exception as e:
+                print("Error deleting screenshot file:", e)
+        else:
+            print(f"Screenshot saved at: {filename}")
 
     def on_dialog_close(self, dialog):
         print("Text from dialog:", dialog.get_text())
@@ -183,5 +191,23 @@ class MyApp(Gtk.Application):
         self.quit()
 
 
-app = MyApp()
+parser = argparse.ArgumentParser(
+    description="A tool for GNOME desktop environment to extract text from screenshots."
+)
+parser.add_argument(
+    "--enablesaving",
+    action="store_true",
+    help="Do not delete the screenshot after extracting text.",
+)
+
+parser.add_argument(
+    "--nocloseonaction",
+    action="store_true",
+    help="Do not quit the app after saving text or copying to clipboard.",
+)
+
+args = parser.parse_args()
+app = GnomeOCRApp(
+    enable_saving=args.enablesaving, no_close_on_action=args.nocloseonaction
+)
 app.run(None)
