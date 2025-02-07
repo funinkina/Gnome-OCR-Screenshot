@@ -6,6 +6,8 @@ from PIL import Image
 import pytesseract
 from datetime import datetime
 import argparse
+import logging
+import logging.handlers
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Xdp", "1.0")
@@ -19,6 +21,12 @@ from gi.repository import (
     GObject,
     Gio,
 )
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+syslog_handler = logging.handlers.SysLogHandler(address="/dev/log")
+logger.addHandler(syslog_handler)
 
 
 class TextDialog(Gtk.Dialog):
@@ -129,7 +137,7 @@ class TextDialog(Gtk.Dialog):
                     if not self.app.no_close_on_action:
                         self.app.quit()
         except GLib.Error as e:
-            print(f"Error in file dialog: {e.message}")
+            logger.error(f"Error in file dialog: {e.message}")
 
     def on_copy_clicked(self, button):
         text = self.get_text()
@@ -159,8 +167,8 @@ class GnomeOCRApp(Gtk.Application):
             if os.path.isdir(save_location):
                 self.save_location = save_location
             else:
-                print(
-                    f"Warning: Save location '{save_location}' is not a valid directory. Using default."
+                logger.warning(
+                    f"Save location '{save_location}' is not a valid directory. Using default."
                 )
                 self.save_location = None
         else:
@@ -186,7 +194,7 @@ class GnomeOCRApp(Gtk.Application):
 
     def on_screenshot_taken(self, source_object, res, user_data):
         if res.had_error():
-            print("Error: Can't take a screenshot.")
+            logger.error("Error: Can't take a screenshot.")
             self.quit()
             return
 
@@ -195,7 +203,7 @@ class GnomeOCRApp(Gtk.Application):
             filename = filename[7:]
             filename = GLib.Uri.unescape_string(filename)
         except Exception as e:
-            print(f"Error: Failed to process screenshot: {str(e)}")
+            logger.error(f"Error: Failed to process screenshot: {str(e)}")
             self.quit()
             return
 
@@ -203,25 +211,26 @@ class GnomeOCRApp(Gtk.Application):
             available_langs = pytesseract.get_languages()
             if self.lang:
                 ocr_lang = self.lang
-                print(f"Using language(s): {ocr_lang}")
+                logger.info(f"Using language(s): {ocr_lang}")
             else:
                 ocr_lang = "+".join(available_langs[:-1])
-                print(f"Available languages: {available_langs[:-1]}")
+                logger.info(f"Available languages: {available_langs[:-1]}")
 
             text = pytesseract.image_to_string(Image.open(filename), lang=ocr_lang)
             print("Extracted text:\n", text)
+            # logger.info(f"Extracted text:\n{text}")
 
             dialog = TextDialog(self, text)
             dialog.connect("close-request", self.on_dialog_close)
             dialog.present()
 
         except Exception as e:
-            print(f"Error extracting text: {str(e)}")
+            logger.error(f"Error extracting text: {str(e)}")
             if not self.enable_saving:
                 try:
                     os.unlink(filename)
                 except Exception as e:
-                    print(f"Error deleting screenshot file: {str(e)}")
+                    logger.error(f"Error deleting screenshot file: {str(e)}")
             self.quit()
             return
 
@@ -229,12 +238,12 @@ class GnomeOCRApp(Gtk.Application):
             try:
                 os.unlink(filename)
             except Exception as e:
-                print("Error deleting screenshot file:", e)
+                logger.error("Error deleting screenshot file:", e)
         else:
-            print(f"Screenshot saved at: {filename}")
+            logger.info(f"Screenshot saved at: {filename}")
 
     def on_dialog_close(self, dialog):
-        print("Text from dialog:", dialog.get_text())
+        logger.info(f"Text from dialog: {dialog.get_text()}")
         dialog.destroy()
         self.quit()
 
