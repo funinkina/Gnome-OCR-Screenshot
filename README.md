@@ -29,9 +29,11 @@ sudo apt install tesseract-ocr
 
 # Fedora
 sudo dnf install tesseract
+sudo dnf install python3-pytesseract
 
 # Arch Linux
 sudo pacman -S tesseract
+sudo pacman -S python-pytesseract
 ```
 
 2. For additional language support, install the corresponding Tesseract language packages:
@@ -54,7 +56,10 @@ Move the script to a directory in your PATH and create keyboard shortcut for qui
 
 ```bash
 git clone https://github.com/funinkina/Gnome-OCR-Screenshot
+cd Gnome-OCR-Screenshot
 sudo cp gnome-screenshot-ocr.py ~/.local/bin/gnome-screenshot-ocr
+# alternatively, you can create a symbolic link
+ln -s gnome-screenshot-ocr.py ~/.local/bin/gnome-screenshot-ocr
 chmod +x ~/.local/bin/gnome-screenshot-ocr
 ```
 
