@@ -1,28 +1,31 @@
-# GNOME Screenshot OCR
+<h1 style="text-align: center;"> GNOME Screenshot OCR </h1>
 
-A simple OCR (Optical Character Recognition) tool for the GNOME desktop environment that allows you to extract text automatically from screenshots.
+A simple OCR (Optical Character Recognition) tool for the GNOME desktop environment that allows you to extract text as well as scan QR codes directly automatically from screenshots.
 
 ![Screenshot](screenshot.png)
 
 ## Features
 
-- Interactive screenshot selection
-- Copy extracted text to clipboard
-- Save extracted text to file
-- Multi-language support
-- GNOME desktop integration
-- Customizable options
-- Lightweight and minimal dependencies
+- Uses native GNOME screenshot portal
+- Minimal Dependencies (pytesseract and pyzbar only)
+- Single file for easy shortcut setup
+- Ability to scan QR codes without any additional setup
+- Can save as file directly
+- Can copy to clipboard directly
+- Supports multiple languages
+- Customizable save location
+- Customizable keyboard shortcuts
 
 ## Requirements
 
 - Python 3.x (Preinstalled on most Linux distributions)
 - GTK 4 (Preinstalled on GNOME-based distributions)
-- Tesseract OCR (See below for installation instructions)
+- Python Tesseract OCR (See below for installation instructions)
+- pyzbar (optional, for QR code scanning)
 
 ## Installation
 
-1. Install system dependencies:
+### 1. Install system dependencies:
 ```bash
 # Ubuntu/Debian
 sudo apt install tesseract-ocr
@@ -34,9 +37,26 @@ sudo dnf install python3-pytesseract
 # Arch Linux
 sudo pacman -S tesseract
 sudo pacman -S python-pytesseract
+
+# Using builtin python package manager
+pip install pytesseract
 ```
 
-2. For additional language support, install the corresponding Tesseract language packages:
+### You can also install `pyzbar` optionally for QR code scanning support:
+```bash
+# Ubuntu/Debian
+sudo apt-get install libzbar0
+sudo apt install python3-pyzbar 
+
+# Arch Linux from AUR
+yay -S pyzbar
+
+#Using builtin python package manager
+pip install pyzbar
+```
+
+
+### 2. For additional language support, install the corresponding Tesseract language packages:
 ```bash
 # Example for hindi language support
 sudo apt install tesseract-ocr-hin  # Ubuntu/Debian

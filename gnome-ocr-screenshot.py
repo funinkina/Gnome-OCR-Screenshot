@@ -2,12 +2,17 @@
 
 import gi
 import os
-from PIL import Image
+
+try:
+    from PIL import Image
+except ImportError:
+    import Image
 import pytesseract
 from datetime import datetime
 import argparse
 import logging
 import logging.handlers
+
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Xdp", "1.0")
@@ -27,6 +32,14 @@ logger.setLevel(logging.INFO)
 
 syslog_handler = logging.handlers.SysLogHandler(address="/dev/log")
 logger.addHandler(syslog_handler)
+
+
+try:
+    from pyzbar.pyzbar import decode
+
+    QR_CODE_SUPPORTED = True
+except ImportError:
+    logger.warning("pyzbar not installed, qr code extraction will not work.")
 
 
 class TextDialog(Gtk.Dialog):
@@ -92,12 +105,10 @@ class TextDialog(Gtk.Dialog):
             f"clipboard_{datetime.now().strftime('%H-%M_%y-%m')}.txt"
         )
 
-        # Use custom save location if specified
         if self.app.save_location:
             initial_folder = Gio.File.new_for_path(self.app.save_location)
             dialog.set_initial_folder(initial_folder)
         else:
-            # Default to Documents folder
             documents_path = GLib.get_user_special_dir(
                 GLib.UserDirectory.DIRECTORY_DOCUMENTS
             )
@@ -216,13 +227,22 @@ class GnomeOCRApp(Gtk.Application):
                 ocr_lang = "+".join(available_langs[:-1])
                 logger.info(f"Available languages: {available_langs[:-1]}")
 
-            text = pytesseract.image_to_string(Image.open(filename), lang=ocr_lang)
-            print("Extracted text:\n", text)
-            # logger.info(f"Extracted text:\n{text}")
+            qr_text = decode(Image.open(filename))
+            if qr_text and QR_CODE_SUPPORTED:
+                text = qr_text[0].data.decode("utf-8")
+                # logger.info(f"Extracted QR code text: {text}")
+                dialog = TextDialog(self, text)
+                dialog.connect("close-request", self.on_dialog_close)
+                dialog.present()
 
-            dialog = TextDialog(self, text)
-            dialog.connect("close-request", self.on_dialog_close)
-            dialog.present()
+            else:
+                text = pytesseract.image_to_string(Image.open(filename), lang=ocr_lang)
+                print("Extracted text:\n", text)
+                # logger.info(f"Extracted text:\n{text}")
+
+                dialog = TextDialog(self, text)
+                dialog.connect("close-request", self.on_dialog_close)
+                dialog.present()
 
         except Exception as e:
             logger.error(f"Error extracting text: {str(e)}")
