@@ -81,6 +81,7 @@ Example with options:
 ```bash
 gnome-screenshot-ocr --lang eng+deu --save-location ~/Documents
 ```
+![shortcut example](shortcut_demo.png)
 
 ## How It Works
 
