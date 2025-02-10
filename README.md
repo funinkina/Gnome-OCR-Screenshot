@@ -93,4 +93,4 @@ gnome-screenshot-ocr --lang eng+deu --save-location ~/Documents
 
 ## License
 
-MIT License
+[MIT](https://github.com/funinkina/Gnome-OCR-Screenshot/blob/main/LICENSE)
