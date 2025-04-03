@@ -77,18 +77,28 @@ class TextDialog(Gtk.Dialog):
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         button_box.set_margin_top(6)
         button_box.set_margin_bottom(12)
-        button_box.set_margin_start(6)
+        button_box.set_margin_start(12)
         button_box.set_margin_end(12)
-        button_box.set_halign(Gtk.Align.END)
+        button_box.set_halign(Gtk.Align.FILL)
+        button_box.set_homogeneous(True)
+        button_box.set_hexpand(True)
 
-        save_button = Gtk.Button(label="Save to File")
-        copy_button = Gtk.Button(label="Copy to Clipboard")
+        btn_save_to_file = Gtk.Button(label="Save to File")
+        btn_save_to_file.set_hexpand(True)
+        btn_copytoclipboard = Gtk.Button(label="Copy to Clipboard")
+        btn_copytoclipboard.set_hexpand(True)
+        btn_retake_screenshot = Gtk.Button(label="Retake Screenshot")
+        btn_retake_screenshot.set_hexpand(True)
 
-        save_button.connect("clicked", self.on_save_clicked)
-        copy_button.connect("clicked", self.on_copy_clicked)
+        btn_save_to_file.connect("clicked", self.on_save_clicked)
+        btn_copytoclipboard.connect("clicked", self.on_copy_clicked)
 
-        button_box.append(save_button)
-        button_box.append(copy_button)
+        btn_retake_screenshot = Gtk.Button(label="Retake Screenshot")
+        btn_retake_screenshot.connect("clicked", self.on_take_another_clicked)
+
+        button_box.append(btn_save_to_file)
+        button_box.append(btn_copytoclipboard)
+        button_box.append(btn_retake_screenshot)
         box.append(button_box)
         self.present()
 
@@ -157,6 +167,10 @@ class TextDialog(Gtk.Dialog):
         clipboard.set_content(provider)
 
         GLib.timeout_add(50, lambda: self.app.quit())
+
+    def on_take_another_clicked(self, button):
+        self.destroy()  # Close the current dialog
+        GLib.timeout_add(150, self.app.take_screenshot)  # Reinitialize the screenshot process
 
 
 class GnomeOCRApp(Gtk.Application):
