@@ -220,7 +220,9 @@ class GnomeOCRApp(Gtk.Application):
             self.quit()
             return
 
-        self._show_text_dialog(text)
+        dialog = TextDialog(self, text)
+        dialog.connect("close-request", self.on_dialog_close)
+        dialog.present()
 
         if not self.enable_saving:
             self._cleanup_file(filename)
@@ -256,11 +258,11 @@ class GnomeOCRApp(Gtk.Application):
             logger.error(f"Error extracting text: {str(e)}")
             return None
 
-    def _show_text_dialog(self, text):
-        """Display the extracted text in a dialog."""
-        dialog = TextDialog(self, text)
-        dialog.connect("close-request", self.on_dialog_close)
-        dialog.present()
+    # def _show_text_dialog(self, text):
+    #     """Display the extracted text in a dialog."""
+    #     dialog = TextDialog(self, text)
+    #     dialog.connect("close-request", self.on_dialog_close)
+    #     dialog.present()
 
     def _cleanup_file(self, filename):
         """Delete the screenshot file if saving is not enabled."""
