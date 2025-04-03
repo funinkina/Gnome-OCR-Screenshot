@@ -227,22 +227,19 @@ class GnomeOCRApp(Gtk.Application):
                 ocr_lang = "+".join(available_langs[:-1])
                 logger.info(f"Available languages: {available_langs[:-1]}")
 
-            if QR_CODE_SUPPORTED:
+            try:
                 qr_text = decode(Image.open(filename))
                 text = qr_text[0].data.decode("utf-8")
-                # logger.info(f"Extracted QR code text: {text}")
-                dialog = TextDialog(self, text)
-                dialog.connect("close-request", self.on_dialog_close)
-                dialog.present()
-
-            else:
+            except Exception as e:
+                logger.error(f"Error decoding QR code: {str(e)}")
                 text = pytesseract.image_to_string(Image.open(filename), lang=ocr_lang)
                 print("Extracted text:\n", text)
                 # logger.info(f"Extracted text:\n{text}")
+            # logger.info(f"Extracted QR code text: {text}")
 
-                dialog = TextDialog(self, text)
-                dialog.connect("close-request", self.on_dialog_close)
-                dialog.present()
+            dialog = TextDialog(self, text)
+            dialog.connect("close-request", self.on_dialog_close)
+            dialog.present()
 
         except Exception as e:
             logger.error(f"Error extracting text: {str(e)}")
