@@ -36,10 +36,10 @@ logger.addHandler(syslog_handler)
 
 try:
     from pyzbar.pyzbar import decode
-
     QR_CODE_SUPPORTED = True
 except ImportError:
     logger.warning("pyzbar not installed, qr code extraction will not work.")
+    QR_CODE_SUPPORTED = False
 
 
 class TextDialog(Gtk.Dialog):
@@ -227,8 +227,8 @@ class GnomeOCRApp(Gtk.Application):
                 ocr_lang = "+".join(available_langs[:-1])
                 logger.info(f"Available languages: {available_langs[:-1]}")
 
-            qr_text = decode(Image.open(filename))
-            if qr_text and QR_CODE_SUPPORTED:
+            if QR_CODE_SUPPORTED:
+                qr_text = decode(Image.open(filename))
                 text = qr_text[0].data.decode("utf-8")
                 # logger.info(f"Extracted QR code text: {text}")
                 dialog = TextDialog(self, text)
