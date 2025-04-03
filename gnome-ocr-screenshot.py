@@ -209,55 +209,65 @@ class GnomeOCRApp(Gtk.Application):
             self.quit()
             return
 
-        try:
-            filename = self.portal.take_screenshot_finish(res)
-            filename = filename[7:]
-            filename = GLib.Uri.unescape_string(filename)
-        except Exception as e:
-            logger.error(f"Error: Failed to process screenshot: {str(e)}")
+        filename = self._process_screenshot(res)
+        if not filename:
             self.quit()
             return
 
-        try:
-            available_langs = pytesseract.get_languages()
-            if self.lang:
-                ocr_lang = self.lang
-                logger.info(f"Using language(s): {ocr_lang}")
-            else:
-                ocr_lang = "+".join(available_langs[:-1])
-                logger.info(f"Available languages: {available_langs[:-1]}")
-
-            try:
-                qr_text = decode(Image.open(filename))
-                text = qr_text[0].data.decode("utf-8")
-            except Exception as e:
-                logger.error(f"Error decoding QR code: {str(e)}")
-                text = pytesseract.image_to_string(Image.open(filename), lang=ocr_lang)
-                print("Extracted text:\n", text)
-                # logger.info(f"Extracted text:\n{text}")
-            # logger.info(f"Extracted QR code text: {text}")
-
-            dialog = TextDialog(self, text)
-            dialog.connect("close-request", self.on_dialog_close)
-            dialog.present()
-
-        except Exception as e:
-            logger.error(f"Error extracting text: {str(e)}")
-            if not self.enable_saving:
-                try:
-                    os.unlink(filename)
-                except Exception as e:
-                    logger.error(f"Error deleting screenshot file: {str(e)}")
+        text = self._extract_text_from_image(filename)
+        if text is None:
+            self._cleanup_file(filename)
             self.quit()
             return
+
+        self._show_text_dialog(text)
 
         if not self.enable_saving:
-            try:
-                os.unlink(filename)
-            except Exception as e:
-                logger.error("Error deleting screenshot file:", e)
+            self._cleanup_file(filename)
         else:
             logger.info(f"Screenshot saved at: {filename}")
+
+    def _process_screenshot(self, res):
+        """Process the screenshot and return the filename."""
+        try:
+            filename = self.portal.take_screenshot_finish(res)
+            filename = filename[7:]  # Remove 'file://' prefix
+            return GLib.Uri.unescape_string(filename)
+        except Exception as e:
+            logger.error(f"Error: Failed to process screenshot: {str(e)}")
+            return None
+
+    def _extract_text_from_image(self, filename):
+        """Extract text or QR code data from the image."""
+        try:
+            available_langs = pytesseract.get_languages()
+            ocr_lang = self.lang or "+".join(available_langs[:-1])
+            logger.info(f"Using language(s): {ocr_lang}")
+
+            if QR_CODE_SUPPORTED:
+                try:
+                    qr_text = decode(Image.open(filename))
+                    return qr_text[0].data.decode("utf-8")
+                except Exception as e:
+                    logger.warning(f"Error decoding QR code: {str(e)}")
+
+            return pytesseract.image_to_string(Image.open(filename), lang=ocr_lang)
+        except Exception as e:
+            logger.error(f"Error extracting text: {str(e)}")
+            return None
+
+    def _show_text_dialog(self, text):
+        """Display the extracted text in a dialog."""
+        dialog = TextDialog(self, text)
+        dialog.connect("close-request", self.on_dialog_close)
+        dialog.present()
+
+    def _cleanup_file(self, filename):
+        """Delete the screenshot file if saving is not enabled."""
+        try:
+            os.unlink(filename)
+        except Exception as e:
+            logger.error(f"Error deleting screenshot file: {str(e)}")
 
     def on_dialog_close(self, dialog):
         logger.info(f"Text from dialog: {dialog.get_text()}")
