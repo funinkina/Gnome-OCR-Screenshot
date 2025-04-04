@@ -219,7 +219,7 @@ class GnomeOCRApp(Gtk.Application):
 
     def on_screenshot_taken(self, source_object, res, user_data):
         if res.had_error():
-            logger.error("Error: Can't take a screenshot.")
+            logger.error(f"Error taking screenshot: {res.get_error().message}")
             self.quit()
             return
 
@@ -271,12 +271,6 @@ class GnomeOCRApp(Gtk.Application):
         except Exception as e:
             logger.error(f"Error extracting text: {str(e)}")
             return None
-
-    # def _show_text_dialog(self, text):
-    #     """Display the extracted text in a dialog."""
-    #     dialog = TextDialog(self, text)
-    #     dialog.connect("close-request", self.on_dialog_close)
-    #     dialog.present()
 
     def _cleanup_file(self, filename):
         """Delete the screenshot file if saving is not enabled."""
