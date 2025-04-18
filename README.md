@@ -19,6 +19,7 @@ A simple OCR (Optical Character Recognition) tool for the GNOME desktop environm
 ## Requirements
 
 - Python 3.x (Preinstalled on most Linux distributions)
+- python-gobject (For gi module in python)
 - GTK 4 (Preinstalled on GNOME-based distributions)
 - Python Tesseract OCR (See below for installation instructions)
 - pyzbar (optional, for QR code scanning)
@@ -79,7 +80,7 @@ git clone https://github.com/funinkina/Gnome-OCR-Screenshot
 cd Gnome-OCR-Screenshot
 sudo cp gnome-screenshot-ocr.py /usr/local/bin/gnome-screenshot-ocr
 # alternatively, you can create a symbolic link
-ln -s gnome-screenshot-ocr.py /usr/local/bin/gnome-screenshot-ocr
+sudo ln -s gnome-screenshot-ocr.py /usr/local/bin/gnome-screenshot-ocr
 sudo chmod +x ~/.local/bin/gnome-screenshot-ocr
 ```
 
