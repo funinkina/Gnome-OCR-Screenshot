@@ -36,6 +36,7 @@ logger.addHandler(syslog_handler)
 
 try:
     from pyzbar.pyzbar import decode
+
     QR_CODE_SUPPORTED = True
 except ImportError:
     logger.warning("pyzbar not installed, qr code extraction will not work.")
@@ -169,8 +170,8 @@ class TextDialog(Gtk.Dialog):
         GLib.timeout_add(50, lambda: self.app.quit())
 
     def on_take_another_clicked(self, button):
-        self.destroy()  # Close the current dialog
-        GLib.timeout_add(150, self.app.take_screenshot)  # Reinitialize the screenshot process
+        self.destroy()
+        GLib.timeout_add(150, self.app.take_screenshot)
 
 
 class GnomeOCRApp(Gtk.Application):
@@ -218,11 +219,6 @@ class GnomeOCRApp(Gtk.Application):
         return False
 
     def on_screenshot_taken(self, source_object, res, user_data):
-        if res.had_error():
-            logger.error(f"Error taking screenshot: {res.get_error().message}")
-            self.quit()
-            return
-
         filename = self._process_screenshot(res)
         if not filename:
             self.quit()
@@ -247,10 +243,13 @@ class GnomeOCRApp(Gtk.Application):
         """Process the screenshot and return the filename."""
         try:
             filename = self.portal.take_screenshot_finish(res)
-            filename = filename[7:]  # Remove 'file://' prefix
+            filename = filename[7:]
             return GLib.Uri.unescape_string(filename)
+        except GLib.Error as e:
+            logger.error(f"Error taking screenshot: {e.message}")
+            return None
         except Exception as e:
-            logger.error(f"Error: Failed to process screenshot: {str(e)}")
+            logger.error(f"Error processing screenshot result: {str(e)}")
             return None
 
     def _extract_text_from_image(self, filename):
