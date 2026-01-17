@@ -81,7 +81,7 @@ cd Gnome-OCR-Screenshot
 sudo cp gnome-ocr-screenshot.py ~/.local/bin/gnome-ocr-screenshot
 # alternatively, you can create a symbolic link
 # ln -s gnome-ocr-screenshot.py ~/.local/bin/gnome-ocr-screenshot
-sudo chmod +x ~/.local/bin/gnome-ocr-screenshot
+chmod +x ~/.local/bin/gnome-ocr-screenshot
 ```
 
 ### Then make keyboard shortcut in gnome control center to run the script.
