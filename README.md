@@ -80,7 +80,7 @@ git clone https://github.com/funinkina/Gnome-OCR-Screenshot
 cd Gnome-OCR-Screenshot
 sudo cp gnome-ocr-screenshot.py ~/.local/bin/gnome-ocr-screenshot
 # alternatively, you can create a symbolic link
-# sudo ln -s gnome-ocr-screenshot.py ~/.local/bin/gnome-ocr-screenshot
+# ln -s gnome-ocr-screenshot.py ~/.local/bin/gnome-ocr-screenshot
 sudo chmod +x ~/.local/bin/gnome-ocr-screenshot
 ```
 
