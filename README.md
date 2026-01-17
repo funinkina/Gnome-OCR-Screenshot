@@ -78,7 +78,7 @@ Move the script to a directory in your PATH and create keyboard shortcut for qui
 ```bash
 git clone https://github.com/funinkina/Gnome-OCR-Screenshot
 cd Gnome-OCR-Screenshot
-sudo cp gnome-ocr-screenshot.py ~/.local/bin/gnome-ocr-screenshot
+cp gnome-ocr-screenshot.py ~/.local/bin/gnome-ocr-screenshot
 # alternatively, you can create a symbolic link
 # ln -s gnome-ocr-screenshot.py ~/.local/bin/gnome-ocr-screenshot
 chmod +x ~/.local/bin/gnome-ocr-screenshot
