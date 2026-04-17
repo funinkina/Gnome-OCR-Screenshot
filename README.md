@@ -87,7 +87,7 @@ chmod +x ~/.local/bin/gnome-ocr-screenshot
 ### Then make keyboard shortcut in gnome control center to run the script.
 1. Open GNOME settings
 2. Go to Keyboard Shortcuts
-3. Add a new shortcut with the command `gnome-screenshot-ocr` with the appropriate arguments (see below)
+3. Add a new shortcut with the command `gnome-ocr-screenshot` with the appropriate arguments (see below)
 4. Assign a key combination to the shortcut, for example: `Meta+PrintScreen`. 
 
 ### Command-line Options
@@ -100,7 +100,7 @@ chmod +x ~/.local/bin/gnome-ocr-screenshot
 
 Example with options:
 ```bash
-gnome-screenshot-ocr --lang eng+deu --save-location ~/Documents
+gnome-ocr-screenshot --lang eng+deu --save-location ~/Documents
 ```
 ![shortcut example](shortcut_demo.png)
 
