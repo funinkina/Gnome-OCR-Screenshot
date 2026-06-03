@@ -2,6 +2,7 @@
 
 import gi
 import os
+import subprocess
 import threading
 
 try:
@@ -283,10 +284,17 @@ class GnomeOCRApp(Adw.Application):
             return False
 
         if self.autocopy:
-            clipboard = self.win.get_clipboard()
-            provider = Gdk.ContentProvider.new_for_value(GObject.Value(str, text))
-            clipboard.set_content(provider)
-            GLib.timeout_add(50, self.quit)
+            encoded = text.encode()
+            try:
+                subprocess.run(["wl-copy"], input=encoded, check=True)
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                try:
+                    subprocess.run(["xclip", "-selection", "clipboard"], input=encoded, check=True)
+                except (FileNotFoundError, subprocess.CalledProcessError):
+                    clipboard = self.win.get_clipboard()
+                    provider = Gdk.ContentProvider.new_for_value(GObject.Value(str, text))
+                    clipboard.set_content(provider)
+            self.quit()
             return False
 
         dialog.set_text(text)
