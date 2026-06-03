@@ -102,10 +102,22 @@ chmod +x ~/.local/bin/gnome-ocr-screenshot
 - `--nocloseonaction`: Keep the application running after saving text or copying to clipboard.
 - `--lang`: Specify OCR language(s) (e.g., `--lang eng+deu` for English and German). Default is all the available languages of Tesseract data installed on your system.
 - `--save-location`: Set default directory for saving text files (e.g., `--save-location ~/Documents`). Default is the user's documents directory.
+- `--preprocess`: Apply grayscale, contrast boost, and sharpening to the screenshot before OCR. Useful for low-contrast or noisy images.
+- `--psm N`: Set Tesseract page segmentation mode (0–13). Default is `3` (fully automatic). Use `7` for single-line text, `6` for uniform text blocks.
+- `--autocopy`: Copy extracted text directly to clipboard without showing a dialog. Useful for keyboard shortcut workflows.
 
 Example with options:
 ```bash
 gnome-ocr-screenshot --lang eng+deu --save-location ~/Documents
+
+# Single line of text (e.g. a label or caption)
+gnome-ocr-screenshot --psm 7
+
+# Silent clipboard copy, no dialog
+gnome-ocr-screenshot --autocopy
+
+# Improve accuracy on low-contrast screenshot
+gnome-ocr-screenshot --preprocess
 ```
 ![shortcut example](shortcut_demo.png)
 
