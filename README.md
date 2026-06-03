@@ -2,7 +2,7 @@
 
 A simple OCR (Optical Character Recognition) tool for the GNOME desktop environment that allows you to extract text as well as scan QR codes directly automatically from screenshots.
 
-![Screenshot](screenshot.png)
+<img width="1918" height="646" alt="screenshot" src="https://github.com/user-attachments/assets/16577dad-8ed9-4e4e-91da-b0771234e160" />
 
 ## Features
 
@@ -122,7 +122,7 @@ gnome-ocr-screenshot --autocopy
 # Improve accuracy on low-contrast screenshot
 gnome-ocr-screenshot --preprocess
 ```
-![shortcut example](shortcut_demo.png)
+<img width="1122" height="844" alt="shortcut_demo" src="https://github.com/user-attachments/assets/338ba665-dd28-45f7-84ef-b3a6c18ba07c" />
 
 ## How It Works
 
