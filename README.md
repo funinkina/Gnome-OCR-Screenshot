@@ -83,10 +83,13 @@ Move the script to a directory in your PATH and create keyboard shortcut for qui
 ```bash
 git clone https://github.com/funinkina/Gnome-OCR-Screenshot
 cd Gnome-OCR-Screenshot
-cp gnome-ocr-screenshot.py ~/.local/bin/gnome-ocr-screenshot
-# alternatively, you can create a symbolic link
-# ln -s gnome-ocr-screenshot.py ~/.local/bin/gnome-ocr-screenshot
-chmod +x ~/.local/bin/gnome-ocr-screenshot
+make install
+```
+
+This creates a symlink at `~/.local/bin/gnome-ocr-screenshot` pointing to the script. To remove it:
+
+```bash
+make uninstall
 ```
 
 ### Then make keyboard shortcut in gnome control center to run the script.
