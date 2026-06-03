@@ -17,7 +17,7 @@ import logging.handlers
 gi.require_version("Gtk", "4.0")
 gi.require_version("Xdp", "1.0")
 gi.require_version("Adw", "1")
-from gi.repository import (
+from gi.repository import (  # noqa: E402
     Gtk,
     GLib,
     Xdp,
@@ -174,7 +174,7 @@ class TextDialog(Gtk.Dialog):
         GLib.timeout_add(150, self.app.take_screenshot)
 
 
-class GnomeOCRApp(Gtk.Application):
+class GnomeOCRApp(Adw.Application):
     def __init__(
         self,
         enable_saving=False,
@@ -201,7 +201,7 @@ class GnomeOCRApp(Gtk.Application):
             self.save_location = None
 
     def do_activate(self):
-        self.win = Gtk.ApplicationWindow(application=self)
+        self.win = Adw.ApplicationWindow(application=self)
         self.win.set_default_size(1, 1)
         self.win.set_decorated(False)
         self.win.set_opacity(0)
