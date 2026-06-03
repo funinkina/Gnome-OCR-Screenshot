@@ -2,11 +2,13 @@
 
 import gi
 import os
+import threading
 
 try:
-    from PIL import Image
+    from PIL import Image, ImageEnhance
 except ImportError:
     import Image
+    import ImageEnhance
 import pytesseract
 from datetime import datetime
 import argparse
@@ -30,9 +32,13 @@ from gi.repository import (  # noqa: E402
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-syslog_handler = logging.handlers.SysLogHandler(address="/dev/log")
-logger.addHandler(syslog_handler)
+try:
+    syslog_handler = logging.handlers.SysLogHandler(address="/dev/log")
+    logger.addHandler(syslog_handler)
+except OSError:
+    logger.addHandler(logging.StreamHandler())
 
+_NON_LANG = {"osd", "equ"}
 
 try:
     from pyzbar.pyzbar import decode
@@ -44,8 +50,8 @@ except ImportError:
 
 
 class TextDialog(Gtk.Dialog):
-    def __init__(self, app, text=""):
-        super().__init__(title="Extracted Text", application=app, modal=True)
+    def __init__(self, app):
+        super().__init__(title="Extracting text…", application=app, modal=True)
         self.app = app
 
         self.set_default_size(500, 400)
@@ -54,26 +60,30 @@ class TextDialog(Gtk.Dialog):
         self.set_child(box)
         box.append(self.toast_overlay)
 
-        scrolled_window = Gtk.ScrolledWindow()
-        scrolled_window.set_hexpand(True)
-        scrolled_window.set_vexpand(True)
+        self.spinner = Gtk.Spinner()
+        self.spinner.set_margin_top(40)
+        self.spinner.set_margin_bottom(40)
+        self.spinner.set_size_request(48, 48)
+        self.spinner.set_vexpand(True)
+        self.spinner.set_halign(Gtk.Align.CENTER)
+        self.spinner.set_valign(Gtk.Align.CENTER)
+        self.spinner.start()
+        self.toast_overlay.set_child(self.spinner)
+
+        self.scrolled_window = Gtk.ScrolledWindow()
+        self.scrolled_window.set_hexpand(True)
+        self.scrolled_window.set_vexpand(True)
 
         self.text_view = Gtk.TextView()
         self.text_view.set_wrap_mode(Gtk.WrapMode.WORD)
         self.text_view.set_editable(True)
         self.text_view.set_cursor_visible(True)
-
         self.text_view.set_margin_start(12)
         self.text_view.set_margin_end(12)
         self.text_view.set_margin_top(12)
         self.text_view.set_margin_bottom(3)
         self.text_view.set_vexpand(True)
-        buffer = self.text_view.get_buffer()
-        buffer.set_text(text)
-
-        scrolled_window.set_child(self.text_view)
-
-        self.toast_overlay.set_child(scrolled_window)
+        self.scrolled_window.set_child(self.text_view)
 
         button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         button_box.set_margin_top(6)
@@ -84,24 +94,38 @@ class TextDialog(Gtk.Dialog):
         button_box.set_homogeneous(True)
         button_box.set_hexpand(True)
 
-        btn_save_to_file = Gtk.Button(label="Save to File")
-        btn_save_to_file.set_hexpand(True)
-        btn_copytoclipboard = Gtk.Button(label="Copy to Clipboard")
-        btn_copytoclipboard.set_hexpand(True)
-        btn_retake_screenshot = Gtk.Button(label="Retake Screenshot")
-        btn_retake_screenshot.set_hexpand(True)
+        self.btn_save_to_file = Gtk.Button(label="Save to File")
+        self.btn_save_to_file.set_hexpand(True)
+        self.btn_save_to_file.set_sensitive(False)
+        self.btn_copytoclipboard = Gtk.Button(label="Copy to Clipboard")
+        self.btn_copytoclipboard.set_hexpand(True)
+        self.btn_copytoclipboard.set_sensitive(False)
+        self.btn_retake_screenshot = Gtk.Button(label="Retake Screenshot")
+        self.btn_retake_screenshot.set_hexpand(True)
 
-        btn_save_to_file.connect("clicked", self.on_save_clicked)
-        btn_copytoclipboard.connect("clicked", self.on_copy_clicked)
+        self.btn_save_to_file.connect("clicked", self.on_save_clicked)
+        self.btn_copytoclipboard.connect("clicked", self.on_copy_clicked)
+        self.btn_retake_screenshot.connect("clicked", self.on_take_another_clicked)
 
-        btn_retake_screenshot = Gtk.Button(label="Retake Screenshot")
-        btn_retake_screenshot.connect("clicked", self.on_take_another_clicked)
-
-        button_box.append(btn_save_to_file)
-        button_box.append(btn_copytoclipboard)
-        button_box.append(btn_retake_screenshot)
+        button_box.append(self.btn_save_to_file)
+        button_box.append(self.btn_copytoclipboard)
+        button_box.append(self.btn_retake_screenshot)
         box.append(button_box)
         self.present()
+
+    def set_text(self, text):
+        self.spinner.stop()
+        self.toast_overlay.set_child(self.scrolled_window)
+
+        buffer = self.text_view.get_buffer()
+        buffer.set_text(text)
+
+        word_count = len(text.split())
+        char_count = len(text)
+        self.set_title(f"Extracted Text ({word_count} words, {char_count} chars)")
+
+        self.btn_save_to_file.set_sensitive(True)
+        self.btn_copytoclipboard.set_sensitive(True)
 
     def get_text(self):
         buffer = self.text_view.get_buffer()
@@ -181,14 +205,19 @@ class GnomeOCRApp(Adw.Application):
         no_close_on_action=False,
         lang=None,
         save_location=None,
+        preprocess=False,
+        psm=3,
+        autocopy=False,
     ):
         super().__init__()
         self.portal = Xdp.Portal()
         self.enable_saving = enable_saving
         self.no_close_on_action = no_close_on_action
         self.lang = lang
+        self.preprocess = preprocess
+        self.psm = psm
+        self.autocopy = autocopy
 
-        # Validate and store save location
         if save_location:
             if os.path.isdir(save_location):
                 self.save_location = save_location
@@ -224,23 +253,48 @@ class GnomeOCRApp(Adw.Application):
             self.quit()
             return
 
-        text = self._extract_text_from_image(filename)
+        if self.autocopy:
+
+            def do_ocr():
+                text = self._extract_text_from_image(filename)
+                GLib.idle_add(self._on_ocr_done, None, filename, text)
+
+            threading.Thread(target=do_ocr, daemon=True).start()
+        else:
+            dialog = TextDialog(self)
+            dialog.connect("close-request", self.on_dialog_close)
+
+            def do_ocr():
+                text = self._extract_text_from_image(filename)
+                GLib.idle_add(self._on_ocr_done, dialog, filename, text)
+
+            threading.Thread(target=do_ocr, daemon=True).start()
+
+    def _on_ocr_done(self, dialog, filename, text):
         if text is None:
             self._cleanup_file(filename)
+            if dialog:
+                dialog.destroy()
             self.quit()
-            return
+            return False
 
-        dialog = TextDialog(self, text)
-        dialog.connect("close-request", self.on_dialog_close)
-        dialog.present()
+        if self.autocopy:
+            clipboard = self.win.get_clipboard()
+            provider = Gdk.ContentProvider.new_for_value(GObject.Value(str, text))
+            clipboard.set_content(provider)
+            GLib.timeout_add(50, self.quit)
+            return False
+
+        dialog.set_text(text)
 
         if not self.enable_saving:
             self._cleanup_file(filename)
         else:
             logger.info(f"Screenshot saved at: {filename}")
 
+        return False
+
     def _process_screenshot(self, res):
-        """Process the screenshot and return the filename."""
         try:
             filename = self.portal.take_screenshot_finish(res)
             filename = filename[7:]
@@ -253,26 +307,35 @@ class GnomeOCRApp(Adw.Application):
             return None
 
     def _extract_text_from_image(self, filename):
-        """Extract text or QR code data from the image."""
         try:
             available_langs = pytesseract.get_languages()
-            ocr_lang = self.lang or "+".join(available_langs[:-1])
+            ocr_lang = self.lang or "+".join(
+                lang for lang in available_langs if lang not in _NON_LANG
+            )
             logger.info(f"Using language(s): {ocr_lang}")
+
+            img = Image.open(filename)
 
             if QR_CODE_SUPPORTED:
                 try:
-                    qr_text = decode(Image.open(filename))
-                    return qr_text[0].data.decode("utf-8")
+                    qr_results = decode(img)
+                    if qr_results and qr_results[0].data:
+                        return qr_results[0].data.decode("utf-8")
                 except Exception as e:
                     logger.warning(f"Error decoding QR code: {str(e)}")
 
-            return pytesseract.image_to_string(Image.open(filename), lang=ocr_lang)
+            if self.preprocess:
+                img = img.convert("L")
+                img = ImageEnhance.Contrast(img).enhance(2.0)
+                img = ImageEnhance.Sharpness(img).enhance(2.0)
+
+            config = f"--psm {self.psm}"
+            return pytesseract.image_to_string(img, lang=ocr_lang, config=config)
         except Exception as e:
             logger.error(f"Error extracting text: {str(e)}")
             return None
 
     def _cleanup_file(self, filename):
-        """Delete the screenshot file if saving is not enabled."""
         try:
             os.unlink(filename)
         except Exception as e:
@@ -292,23 +355,37 @@ parser.add_argument(
     action="store_true",
     help="Do not delete the screenshot after extracting text.",
 )
-
 parser.add_argument(
     "--nocloseonaction",
     action="store_true",
     help="Do not quit the app after saving text or copying to clipboard.",
 )
-
 parser.add_argument(
     "--lang",
     action="store",
     help="Language(s) to use for OCR. Default is all available languages. Make sure to install the required language data.\n Example usage: --lang eng+deu",
 )
-
 parser.add_argument(
     "--save-location",
     action="store",
     help="Default directory for saving text files. Must be an existing directory.",
+)
+parser.add_argument(
+    "--preprocess",
+    action="store_true",
+    help="Apply grayscale + contrast + sharpen to image before OCR. Improves accuracy on low-contrast or noisy screenshots.",
+)
+parser.add_argument(
+    "--psm",
+    type=int,
+    default=3,
+    metavar="N",
+    help="Tesseract page segmentation mode (0-13). Default: 3 (auto). Use 7 for single lines, 6 for uniform text blocks.",
+)
+parser.add_argument(
+    "--autocopy",
+    action="store_true",
+    help="Copy extracted text directly to clipboard without showing a dialog.",
 )
 
 args = parser.parse_args()
@@ -317,5 +394,8 @@ app = GnomeOCRApp(
     no_close_on_action=args.nocloseonaction,
     lang=args.lang,
     save_location=args.save_location,
+    preprocess=args.preprocess,
+    psm=args.psm,
+    autocopy=args.autocopy,
 )
 app.run(None)

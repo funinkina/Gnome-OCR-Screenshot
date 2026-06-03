@@ -15,6 +15,11 @@ A simple OCR (Optical Character Recognition) tool for the GNOME desktop environm
 - Supports multiple languages
 - Customizable save location
 - Customizable keyboard shortcuts
+- Loading indicator while OCR is processing
+- Word and character count shown in dialog title
+- Optional image preprocessing (grayscale + contrast + sharpen) for better accuracy on low-contrast screenshots
+- Configurable Tesseract page segmentation mode for different text layouts
+- Headless clipboard copy mode (`--autocopy`) for scripting workflows
 
 ## Requirements
 
